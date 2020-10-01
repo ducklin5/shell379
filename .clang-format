@@ -1,0 +1,10 @@
+BasedOnStyle: Google
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+IndentWidth: 8
+UseTab: Always
+
+AllowShortIfStatementsOnASingleLine: false
+IndentCaseLabels: true
