@@ -49,45 +49,6 @@ void Input::printInput( int newPos ) {
 		cout << '\b';
 }
 
-void Input::handleEscLSBracket() {
-	switch (getch()) {
-		case UP:
-			cout << "UP";
-			break;
-		case DOWN:
-			cout << "DOWN";
-			break;
-		case RIGHT:
-			if (curPos < (int)result.length()) {
-				cout << result.at(curPos);
-				curPos++;
-			}
-			break;
-		case LEFT:
-			if (curPos > 0) {
-				cout << '\b';
-				curPos--;
-			}
-			break;
-		case HOME:;
-			cursorToHome();
-			getch();
-			break;
-		case END:
-			cursorToEnd();
-			getch();
-			break;
-	}
-}
-
-void Input::handleESC() {
-	switch (getch()) {
-		case LSBRACKET:
-			handleEscLSBracket();
-			break;
-	}
-}
-
 int Input::grabInput(string& resultDest) {
 	result = "";
 	curPos = 0;
@@ -126,6 +87,45 @@ int Input::grabInput(string& resultDest) {
 
 	resultDest = result;
 	return 0;
+}
+
+void Input::handleESC() {
+	switch (getch()) {
+		case LSBRACKET:
+			handleEscLSBracket();
+			break;
+	}
+}
+
+void Input::handleEscLSBracket() {
+	switch (getch()) {
+		case UP:
+			cout << "UP";
+			break;
+		case DOWN:
+			cout << "DOWN";
+			break;
+		case RIGHT:
+			if (curPos < (int)result.length()) {
+				cout << result.at(curPos);
+				curPos++;
+			}
+			break;
+		case LEFT:
+			if (curPos > 0) {
+				cout << '\b';
+				curPos--;
+			}
+			break;
+		case HOME:;
+			cursorToHome();
+			getch();
+			break;
+		case END:
+			cursorToEnd();
+			getch();
+			break;
+	}
 }
 
 // https://man7.org/linux/man-pages/man3/termios.3.html
