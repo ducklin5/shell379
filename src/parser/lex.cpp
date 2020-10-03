@@ -10,7 +10,7 @@ using std::string;
 using std::vector;
 
 ostream& operator<<(ostream& os, const Token& token) {
-	static const string tokenTypeNames[] = {"Empty", "Word", "Operator"};
+	static const string tokenTypeNames[] = {"Empty", "Word", "Modifier"};
 	const char fill = ' ';
 	const int width = 10;
 	return os << std::left <<  std::setw(width) << std::setfill(fill) << tokenTypeNames[(int)token.type]
@@ -18,8 +18,8 @@ ostream& operator<<(ostream& os, const Token& token) {
 }
 
 bool isWordChar(char ch) {
-	return isalnum(ch) ||
-		ch == '/';
+	return isalnum(ch) || ispunct(ch) ||
+		ch == '-' || ch == '_';
 }
 
 vector<Token> lex(string input) {
@@ -38,12 +38,12 @@ vector<Token> lex(string input) {
 		if (ch == ' ') {
 			pushToken();
 		} else if (ch == '>' || ch == '<' || ch == '&') {
-			if (!currentToken.isOperator()) {
+			if (!currentToken.isModifier()) {
 				pushToken();
-				currentToken.type = operatorT;
+				currentToken.type = modifierT;
 			}
 			currentToken.value.push_back(ch);
-		} else if (isalnum(ch)) {
+		} else if (isWordChar(ch)) {
 			if (!currentToken.isWord()) {
 				pushToken();
 				currentToken.type = wordT;

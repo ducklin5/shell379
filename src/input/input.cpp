@@ -28,6 +28,13 @@ int Input::getch() {
 	return ch;
 }
 
+void Input::printInput( int newPos ) {
+	cursorToHome();
+	cout << result;
+	for (curPos=(int)result.length() ; curPos>newPos && newPos>0; curPos--)
+		cout << '\b';
+}
+
 void Input::cursorToHome() {
 	for (; curPos > 0; curPos--) cout << '\b';
 }
@@ -40,13 +47,6 @@ void Input::clearInput() {
 	cursorToHome();
 	for (; curPos < (int)result.length(); curPos++) cout << " ";
 	cursorToHome();
-}
-
-void Input::printInput( int newPos ) {
-	cursorToHome();
-	cout << result;
-	for (curPos=(int)result.length() ; curPos>newPos && newPos>0; curPos--)
-		cout << '\b';
 }
 
 int Input::grabInput(string& resultDest) {
@@ -100,10 +100,8 @@ void Input::handleESC() {
 void Input::handleEscLSBracket() {
 	switch (getch()) {
 		case UP:
-			cout << "UP";
 			break;
 		case DOWN:
-			cout << "DOWN";
 			break;
 		case RIGHT:
 			if (curPos < (int)result.length()) {

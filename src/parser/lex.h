@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-enum TokenType { emptyT, wordT, operatorT};
+enum TokenType { emptyT, wordT, modifierT};
 
 struct Token {
 	TokenType type;
@@ -18,7 +18,7 @@ struct Token {
 
 	bool isEmpty() { return type == emptyT; }
 
-	bool isOperator() { return type == operatorT;}
+	bool isModifier() { return type == modifierT;}
 
 	bool isWord() { return type == wordT; }
 	

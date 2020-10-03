@@ -1,8 +1,9 @@
 #include <iostream>
 
 #include "input/input.h"
-#include "prompt/prompt.h"
 #include "parser/lex.h"
+#include "parser/parser.h"
+#include "prompt/prompt.h"
 
 using std::cout;
 using std::string;
@@ -21,16 +22,27 @@ int main(int argc, char* argv[]) {
 			cout << "\nFailed to get input\n";
 		}
 
-		
 		cout << "\n" << inputCommand << "\n";
-		vector<Token> tokens = lex(inputCommand);
-		
-		for (auto token: tokens) {
+		cout << "-----------------------\n";
+
+		for(Token token: lex(inputCommand)) {
 			cout << token << "\n";
 		}
+		
+		cout << "-----------------------\n";
+
+		Fragment* command = GlobalParser.parse(inputCommand);
+		if (command == nullptr) {
+			cout << "Invalid Command\n";
+			continue;
+		}
+		
+		command->execute();
 
 		alive = false;
 	}
 
 	return 0;
 }
+
+// https://unix.stackexchange.com/questions/326626/any-way-to-show-each-step-during-the-command-processing
