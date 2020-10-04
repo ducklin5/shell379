@@ -1,5 +1,10 @@
+/*
+ *  */
 #include "fragment.h"
+#include "../builtins/builtin_manager.h"
+#include "../process_table/process_table.h"
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +19,8 @@ using std::string;
 using std::vector;
 
 SimpleCommand::SimpleCommand(string cmdName, vector<string> args,
-			     vector<string> outputs, vector<string> inputs,
+			     vector<string> inputs, vector<string> outputs,
+
 			     bool background = false)
     : cmdName(cmdName),
       args(args),
@@ -22,9 +28,90 @@ SimpleCommand::SimpleCommand(string cmdName, vector<string> args,
       outputs(outputs),
       background(background) {}
 
-int SimpleCommand::childExec() {
-	char* execArgs[args.size() + 2];
+int SimpleCommand::openRedirectFiles() {
+	// TODO: multiple outputs and inputs
+	stdInBackup = dup(STDIN_FILENO);
+	stdOutBackup = dup(STDOUT_FILENO);
 	
+	// replace stdin with inputs
+	for (string input : inputs) {
+		close(STDIN_FILENO);
+		if (open(input.c_str(), O_RDONLY) < 0) {
+			cout << "shell379: failed to open an input "
+				"file with errno: "
+			     << errno << "\n";
+			return errno;
+		}
+	}
+
+	// replace stdout with outputs
+	const int flags = O_CREAT | O_WRONLY | O_TRUNC;
+	for (string output : outputs) {
+		close(STDOUT_FILENO);
+		if (open(output.c_str(), flags, S_IRWXU) < 0) {
+			cout << "shell379: failed to open an output "
+				"file with errno: "
+			     << errno << "\n";
+			return errno;
+		}
+	}
+	return 0;
+}
+
+void SimpleCommand::restoreStd() {
+	dup2(stdInBackup, STDIN_FILENO);
+	dup2(stdOutBackup, STDOUT_FILENO);
+}
+
+int SimpleCommand::tryBuiltin(bool& found) {
+	Builtin* builtin = BuiltinManager::find(cmdName);
+	found = builtin != nullptr;
+	if (found) {
+		return builtin->exec(args);
+	}
+	return -1;
+}
+
+string SimpleCommand::commandString() {
+	string command = "";
+	command += cmdName;
+	for(auto arg: args) command += " " + arg;
+	for(auto input: inputs) command += " <" + input;
+	for(auto output: outputs) command += " >" + output;
+	return command;
+}
+
+int SimpleCommand::parentExec(int childPid) {
+	int waitPid, waitPStatus, options = WUNTRACED;
+
+	GlobalProcessTable.addProcess(childPid, commandString());
+	
+	if (background)
+		options |= WNOHANG;
+	waitPid = waitpid(childPid, &waitPStatus, options);
+
+	if (waitPid < 0) {
+		perror("waitpid failed");
+	}
+
+	if (waitPid == 0) {
+		cout << childPid << " is still running";
+	}
+	return WEXITSTATUS(waitPStatus);
+}
+
+int SimpleCommand::childExec() {
+	if (background) {
+		bool found;
+		int result = tryBuiltin(found);
+		if (found) {
+			result == 0 ? exit(EXIT_SUCCESS) :
+				exit(EXIT_FAILURE);
+		}
+	}
+
+	char* execArgs[args.size() + 2];
+
 	// construct char* execArgs
 	{
 		int i = 0;
@@ -34,59 +121,47 @@ int SimpleCommand::childExec() {
 		}
 		execArgs[++i] = NULL;
 	}
-	
-	int result = execvp(execArgs[0], execArgs);
 
-	if (result < 0) {
-		cout << "shell379: command not found: " << cmdName;
-	}
+	// execute
+	execvp(execArgs[0], execArgs);
 
-	return result;
+	// TODO: send error back to parent with pipes
+	cout << "shell379: exec failed with errno: " << errno << "\n";
+	exit(EXIT_FAILURE);
 }
 
-int SimpleCommand::parentExec(int childPid) {
-	int waitPid, waitPStatus, options = WUNTRACED;
 
-	if (background)
-		options |= WNOHANG;
-
-	do {
-		waitPid = waitpid(childPid, &waitPStatus, options);
-
-		if (waitPid < 0) {
-			perror("waitpid failed");
-		}
-
-		if (waitPid == 0) {
-			cout << childPid << " is still running";
-		}
-	} while (waitPid == 0 && !background);
-	printf("hello, I am parent of %d (waitPid:%d) (pid:%d)\n", childPid,
-	       waitPid, (int)getpid());
-	return 0;
-}
 
 int SimpleCommand::execute() {
-	cout << "Execute: " << cmdName;
-	cout << "\nargs: ";
-	for (auto arg : args) cout << arg << ", ";
-	cout << "\ninput: ";
-	for (auto input : inputs) cout << input << ", ";
-	cout << "\noutput: ";
-	for (auto output : outputs) cout << output << ", ";
-	cout << "\nbackground: " << (background ? "yes" : "no");
-	cout << "\n--------------------------\n";
-
+	// try open files now because forking is expensive
+	int result = openRedirectFiles();
+	if (result != 0) return result;
+	
+	// no fork case: foreground builtins
+	if(!background){
+		bool found;
+		result = tryBuiltin(found);
+		if (found) {
+			restoreStd();
+			return result;
+		}
+	}
+	
+	// Fork
 	int childPid = fork();
-	if (childPid < 0) {
-		perror("fork failed");
-		exit(EXIT_FAILURE);
+
+	// Child
+	if (childPid == 0) {
+		return childExec();
 	}
 
-	if (childPid == 0) {
-		childExec();
+	// Parent
+	restoreStd();
+	if (childPid > 0) {
+		return parentExec(childPid);
 	} else {
-		parentExec(childPid);
+		cout << "fork failed with errno: " << errno;
+		return errno;
 	}
 
 	return 0;

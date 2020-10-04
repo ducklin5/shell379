@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include "../builtins/builtin.h"
+
 class Fragment {
 	public:
 	virtual ~Fragment(){}
@@ -15,17 +17,23 @@ class SimpleCommand : public Fragment {
 	std::vector<std::string> inputs;
 	std::vector<std::string> outputs;
 	bool background;
+	
+	int stdInBackup, stdOutBackup;
+	Builtin* builtin;
 
 	public:
 	SimpleCommand(std::string cmdName, std::vector<std::string> args,
-			std::vector<std::string> outputs, std::vector<std::string> inputs,
+			std::vector<std::string> inputs, std::vector<std::string> outputs,
 			bool background);
 	~SimpleCommand() {}
 	
 	private:
-	int childExec();
-	
+	int openRedirectFiles();
+	void restoreStd();
+	int tryBuiltin(bool& found);
+	std::string commandString();
 	int parentExec(int parentExec);
+	int childExec();
 
 	public:
 	int execute() override;

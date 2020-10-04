@@ -60,15 +60,16 @@ int Input::grabInput(string& resultDest) {
 		switch (ch) {
 			case '\r':
 			case '\n':
+				cout << "\n";
 				done = true;
 				break;
 
 			case BACKSPACE:
 				if (result.length() > 0 && curPos > 0) {
-					int newPos = curPos-1;
+					int newCurPos = curPos-1;
 					clearInput();
-					result.erase(newPos, 1);
-					printInput(newPos);
+					result.erase(newCurPos, 1);
+					printInput(newCurPos);
 				}
 				break;
 
@@ -84,7 +85,6 @@ int Input::grabInput(string& resultDest) {
 				}
 		}
 	}
-
 	resultDest = result;
 	return 0;
 }

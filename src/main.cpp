@@ -10,39 +10,32 @@ using std::string;
 using std::vector;
 
 int main(int argc, char* argv[]) {
-	bool alive = true;
-	while (alive) {
+	int returnCode = 0;
+	while(true) {
 		if (showPrompt() != 0) {
 			cout << "\nFailed to show prompt\n";
 			return -1;
 		}
 
 		string inputCommand;
-		if (InputManager.grabInput(inputCommand) != 0) {
-			cout << "\nFailed to get input\n";
+		int inputResult = InputManager.grabInput(inputCommand);
+		if (inputResult != 0) {
+			if (inputResult < 0) cout << "\nFailed to get input\n";
+			returnCode = inputResult;
+			return -1;
 		}
-
-		cout << "\n" << inputCommand << "\n";
-		cout << "-----------------------\n";
-
-		for(Token token: lex(inputCommand)) {
-			cout << token << "\n";
-		}
-		
-		cout << "-----------------------\n";
-
+	
 		Fragment* command = GlobalParser.parse(inputCommand);
-		if (command == nullptr) {
-			cout << "Invalid Command\n";
+		if (command == nullptr){
 			continue;
 		}
 		
-		command->execute();
-
-		alive = false;
+		returnCode = command->execute();
 	}
+	
+	// Clean up
 
-	return 0;
+	return returnCode;
 }
 
 // https://unix.stackexchange.com/questions/326626/any-way-to-show-each-step-during-the-command-processing

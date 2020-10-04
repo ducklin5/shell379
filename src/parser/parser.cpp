@@ -13,8 +13,9 @@ Parser::Parser() {}
 Parser::~Parser() { delete currentFragment; }
 
 Token Parser::currentToken() {
-	if (_currentToken >= (int)tokens.size() || _currentToken < 0)
-		throw "Parser: Invalid syntax";
+	if (_currentToken >= (int)tokens.size() || _currentToken < 0){
+		return Token();
+	}
 	return tokens[_currentToken];
 }
 
@@ -24,7 +25,7 @@ Token Parser::useCurrentToken(TokenType expected) {
 		current = currentToken();
 		_currentToken++;
 	} else {
-		throw "Parser: Invalid syntax";
+		return Token();
 	}
 	return current;
 }
@@ -68,7 +69,8 @@ Fragment* Parser::trySimpleCommand() {
 Fragment* Parser::parse(string command) {
 	tokens = lex(command);
 	_currentToken = 0;
-	delete currentFragment;
+	if(currentFragment != nullptr)
+		delete currentFragment;
 
 	return trySimpleCommand();
 }
