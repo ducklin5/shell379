@@ -10,6 +10,8 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
 
 #include <iostream>
 #include <vector>
@@ -78,26 +80,21 @@ string SimpleCommand::commandString() {
 	for(auto arg: args) command += " " + arg;
 	for(auto input: inputs) command += " <" + input;
 	for(auto output: outputs) command += " >" + output;
+	command += background ? " &" : "";
 	return command;
 }
 
 int SimpleCommand::parentExec(int childPid) {
-	int waitPid, waitPStatus, options = WUNTRACED;
-
-	GlobalProcessTable.addProcess(childPid, commandString());
+	ProcessTable::addProcess(childPid, commandString(), background);
 	
+	int status, options = WUNTRACED;
 	if (background)
 		options |= WNOHANG;
-	waitPid = waitpid(childPid, &waitPStatus, options);
+	do {
+		waitpid(childPid, &status, options);
+	} while (!background && !WIFEXITED(status));
 
-	if (waitPid < 0) {
-		perror("waitpid failed");
-	}
-
-	if (waitPid == 0) {
-		cout << childPid << " is still running";
-	}
-	return WEXITSTATUS(waitPStatus);
+	return WEXITSTATUS(status);
 }
 
 int SimpleCommand::childExec() {
@@ -116,7 +113,7 @@ int SimpleCommand::childExec() {
 	{
 		int i = 0;
 		execArgs[i] = strdup(cmdName.c_str());
-		for (; i < args.size(); i++) {
+		for (; i < (int) args.size(); i++) {
 			execArgs[i + 1] = strdup(args[i].c_str());
 		}
 		execArgs[++i] = NULL;
@@ -146,7 +143,9 @@ int SimpleCommand::execute() {
 			return result;
 		}
 	}
-	
+
+
+	signal(SIGCHLD,SIG_IGN);
 	// Fork
 	int childPid = fork();
 

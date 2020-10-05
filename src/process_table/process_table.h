@@ -2,12 +2,13 @@
 #include <unordered_map>
 #include <string>
 
+using ProcMap = std::unordered_map<int, std::string>;
 class ProcessTable {
-	std::unordered_map<int, std::string> table;
+	static ProcMap& getTable(){
+		static ProcMap table = ProcMap();
+		return table;
+	}
 	public:
-	int addProcess(int pid, std::string command);
-	int killProcess(int pid);
-
+	static int getSize();
+	static int addProcess(int pid, std::string command, bool background);
 };
-
-static ProcessTable GlobalProcessTable;

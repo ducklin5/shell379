@@ -1,13 +1,37 @@
+#include <signal.h>
+#include <sys/types.h>
+#include <iostream>
+
 #include "builtin_manager.h"
 
 using std::string;
 using std::vector;
+using std::cout;
 
 struct KillBuiltin : Builtin {
 	int exec(vector<string> args) override {
-		exit(EXIT_SUCCESS);
+		if(args.size() < 1) {
+			cout << "shell379: kill builtin: missing argument\n";
+			return 1;
+		}
+		
+		char* p;
+		unsigned int pid = (unsigned int) strtol(args[0].c_str(), &p, 10);
+    	if(*p) {
+			cout << "shell379: kill builtin: argument not a number" << args[0] << "\n";
+			return 2;
+		}
+		
+
+		if (kill(pid, SIGKILL) < 0) {
+			cout << "shell379: kill builtin: failed to kill "
+				<< pid << " with errno: "
+				<< errno << "\n";
+			return errno;
+		}
+		return 0;
 	}
 };
 namespace {
-	BuiltinManager::Entry entry("kill", new KillBuiltin());
+BuiltinManager::Entry entry("kill", new KillBuiltin());
 }

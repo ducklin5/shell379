@@ -32,7 +32,7 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@echo "> Compiling..."
 	@echo "mkdir -p $(@D)"
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) $(INC) -c -o $@ $< 2> $(BUILDDIR)/errors.txt
+	$(CC) $(CFLAGS) $(INC) -c -o $@ $<
 
 compress: tester
 	$(COMPRESSOR) $(ARCHIVENAME).$(ARCHIVEEXT) $(ARCHIVEFILES) $(ARCHIVEFLAGS)
